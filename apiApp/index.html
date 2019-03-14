@@ -15,7 +15,7 @@
             function handleClientLoad() {
                 // Load the API's client and auth2 modules.
                 // Call the initClient function after the modules load.
-                gapi.load('client:auth2', initClient);
+                gapi.load('client:auth2', token);
             }
             function initClient() {
                 gapi.client.init({
@@ -23,7 +23,7 @@
                     'clientId': '136129714002-ppsnkh4o55ai8bq6ttgrpfker688s4u4.apps.googleusercontent.com',
                     'scope': 'https://www.googleapis.com/auth/fitness.activity.read',
                     'discoveryDocs': ['https://www.googleapis.com/discovery/v1/apis/fitness/v1/rest']
-                }).then(function () {
+                }).then(function (response) {
                     GoogleAuth = gapi.auth2.getAuthInstance();
 
                     // Listen for sign-in state changes.
@@ -71,8 +71,27 @@
                         'signed out.');
                 }
             }
+
             function updateSigninStatus(isSignedIn) {
                 setSigninStatus();
+            }
+            var accessToken;
+            function token(){
+                gapi.auth2.authorize({
+                    client_id: '136129714002-ppsnkh4o55ai8bq6ttgrpfker688s4u4.apps.googleusercontent.com',
+                    scope: 'https://www.googleapis.com/auth/fitness.activity.read',
+                    response_type: 'id_token permission'
+                }, function(response) {
+                    if (response.error) {
+                        // An error happened!
+                        return;
+                    }
+                    // The user authorized the application for the scopes requested.
+                    accessToken = response.access_token;
+                    var idToken = response.id_token;
+                    console.log(accessToken);
+                    // You can also now use gapi.client to perform authenticated requests.
+                });
             }
 
             $('#sign-in-or-out-button').on('click',function(){
@@ -81,7 +100,10 @@
 
             function getData(){
                 var authCode = 'Bearer ';
-                authCode += 'ya29.GlvMBqYTgyxsbZsl-Q9Fr-KaJ7TX1sw1WI6N0QiikaGBW4dzc-ZxXb0HCTEf7z8vWTp4QgeWJKnYDk_CNXGEWLA_bZ6FRV3oq59hr_BcEkS-UHG7AVy9vZ0sq7dV';
+                authCode += accessToken;
+
+                console.log(accessToken);
+
                 // var req_url = "https://www.googleapis.com/fitness/v1/users/me/dataSources";
                 //get today's date
 
@@ -101,16 +123,20 @@
                         }
                         var d = new Date(response.session[0].startTimeMillis);
                         console.log(response);
-                        console.log(response.session[0].startTimeMillis);
                     }
                 });
             }
             $('#get').on('click',function(){
+               handleClientLoad();
+            });
+            $('#next').on('click',function(){
                getData();
             });
 
         });
     </script>
+
+<button id="next">next</button>
 <button id="sign-in-or-out-button"
         style="margin-left: 25px">Sign In/Authorize</button>
 <button id="revoke-access-button"
@@ -119,7 +145,7 @@
 <div id="auth-status" style="display: inline; padding-left: 25px"></div><hr>
 
 <body>
-<button id="get">Sign in</button>
+<button id="get">Get</button>
 <div id="results"></div>
 </body>
 </html>
