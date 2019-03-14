@@ -10,7 +10,9 @@
 <script>
     $(document).ready(function(){
         var SCOPE = 'https://www.googleapis.com/auth/fitness.activity.read';
-        var accessToken;
+        // var accessToken;
+        // var authCode = 'Bearer ';
+
         function handleClientLoad() {
             // Load the API's client and auth2 modules.
             // Call the initClient function after the modules load.
@@ -27,15 +29,14 @@
                     alert('Token Error!')
                     return;
                 }
-                // The user authorized the application for the scopes requested.
-                accessToken = response.access_token;
-                // You can also now use gapi.client to perform authenticated requests.
+                //save token to local storage
+                localStorage.setItem('token',response.access_token);
             });
         }
         function getData(){
-            var authCode = 'Bearer ';
-            authCode += accessToken;
-            console.log(accessToken);
+            var authCode = 'Bearer ' + localStorage.getItem('token');
+            // console.log(authCode);
+            // console.log(accessToken);
             // var req_url = "https://www.googleapis.com/fitness/v1/users/me/dataSources";
             //get today's date
             var req_url = "https://www.googleapis.com/fitness/v1/users/me/sessions?startTime=2019-03-06T00:00:00.000Z&endTime=2019-03-13T23:59:59.999Z"
@@ -60,8 +61,7 @@
             });
         }
         function postData(){
-            var authCode = 'Bearer ';
-            authCode += accessToken;
+            var authCode = 'Bearer ' + localStorage.getItem('token');
             // we use different device uid to distinguish different data sources of a same type.
             var req_url = "https://www.googleapis.com/fitness/v1/users/me/dataset:aggregate";
             // You may need dsId.
@@ -95,14 +95,12 @@
             });
         }
         $('#get').on('click',function(){
-            console.log('as;ldfkj');
             getData();
         });
         $('#post').on('click',function(){
-            console.log('as;ldfkj');
             postData();
         });
-        $('#next').on('click',function(){
+        $('#token').on('click',function(){
             handleClientLoad();
         });
     });
@@ -112,7 +110,7 @@
 
 
 <body>
-<button id="next">Get Token</button>
+<button id="token">Refresh Token</button>
 <button id="post">Post</button>
 <button id="get">Get</button>
 <div id="results"></div>
