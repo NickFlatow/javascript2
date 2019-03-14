@@ -7,144 +7,113 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
     <script src="https://apis.google.com/js/platform.js" async defer></script>
 </head>
-    <script>
-        $(document).ready(function(){
-            var GoogleAuth; // Google Auth object.
-            var SCOPE = 'https://www.googleapis.com/auth/fitness.activity.read';
-
-            function handleClientLoad() {
-                // Load the API's client and auth2 modules.
-                // Call the initClient function after the modules load.
-                gapi.load('client:auth2', token);
-            }
-            function initClient() {
-                gapi.client.init({
-                    'apiKey': 'AIzaSyDqmbrOidTa9pAVOM4aNewGrBjfKXPmyUc',
-                    'clientId': '136129714002-ppsnkh4o55ai8bq6ttgrpfker688s4u4.apps.googleusercontent.com',
-                    'scope': 'https://www.googleapis.com/auth/fitness.activity.read',
-                    'discoveryDocs': ['https://www.googleapis.com/discovery/v1/apis/fitness/v1/rest']
-                }).then(function (response) {
-                    GoogleAuth = gapi.auth2.getAuthInstance();
-
-                    // Listen for sign-in state changes.
-                    GoogleAuth.isSignedIn.listen(updateSigninStatus);
-
-                    // Handle initial sign-in state. (Determine if user is already signed in.)
-                    var user = GoogleAuth.currentUser.get();
-                    setSigninStatus();
-
-                    // Call handleAuthClick function when user clicks on
-                    //      "Sign In/Authorize" button.
-                    $('#sign-in-or-out-button').click(function() {
-                        handleAuthClick();
-                    });
-                    $('#revoke-access-button').click(function() {
-                        revokeAccess();
-                    });
-                });
-            }
-            function handleAuthClick() {
-                if (GoogleAuth.isSignedIn.get()) {
-                    // User is authorized and has clicked 'Sign out' button.
-                    GoogleAuth.signOut();
-                } else {
-                    // User is not signed in. Start Google auth flow.
-                    GoogleAuth.signIn();
+<script>
+    $(document).ready(function(){
+        var SCOPE = 'https://www.googleapis.com/auth/fitness.activity.read';
+        var accessToken;
+        function handleClientLoad() {
+            // Load the API's client and auth2 modules.
+            // Call the initClient function after the modules load.
+            gapi.load('client:auth2', authClient);
+        }
+        function authClient() {
+            gapi.auth2.authorize({
+                client_id: '136129714002-ppsnkh4o55ai8bq6ttgrpfker688s4u4.apps.googleusercontent.com',
+                scope: SCOPE,
+                response_type: 'id_token permission'
+            }, function (response) {
+                if (response.error) {
+                    // An error happened!
+                    alert('Token Error!')
+                    return;
                 }
-            }
-
-            function revokeAccess() {
-                GoogleAuth.disconnect();
-            }
-            function setSigninStatus(isSignedIn) {
-                var user = GoogleAuth.currentUser.get();
-                var isAuthorized = user.hasGrantedScopes(SCOPE);
-                if (isAuthorized) {
-                    $('#sign-in-or-out-button').html('Sign out');
-                    $('#revoke-access-button').css('display', 'inline-block');
-                    $('#auth-status').html('You are currently signed in and have granted ' +
-                        'access to this app.');
-                } else {
-                    $('#sign-in-or-out-button').html('Sign In/Authorize');
-                    $('#revoke-access-button').css('display', 'none');
-                    $('#auth-status').html('You have not authorized this app or you are ' +
-                        'signed out.');
+                // The user authorized the application for the scopes requested.
+                accessToken = response.access_token;
+                // You can also now use gapi.client to perform authenticated requests.
+            });
+        }
+        function getData(){
+            var authCode = 'Bearer ';
+            authCode += accessToken;
+            console.log(accessToken);
+            // var req_url = "https://www.googleapis.com/fitness/v1/users/me/dataSources";
+            //get today's date
+            var req_url = "https://www.googleapis.com/fitness/v1/users/me/sessions?startTime=2019-03-06T00:00:00.000Z&endTime=2019-03-13T23:59:59.999Z"
+            $.ajax({
+                type: "GET",
+                url: req_url,
+                beforeSend : function( xhr ) {
+                    xhr.setRequestHeader('Authorization', authCode);
+                },
+                success: function (response) {
+                    var dss = response['session'];
+                    var dsname = [];
+                    for (i = 0; i < dss.length; i++) {
+                        dsname.push(dss[i]);
+                    }
+                    var d = new Date(response.session[0].startTimeMillis);
+                    console.log(response);
+                },
+                failure: function(){
+                    //get new access token
                 }
-            }
-
-            function updateSigninStatus(isSignedIn) {
-                setSigninStatus();
-            }
-            var accessToken;
-            function token(){
-                gapi.auth2.authorize({
-                    client_id: '136129714002-ppsnkh4o55ai8bq6ttgrpfker688s4u4.apps.googleusercontent.com',
-                    scope: 'https://www.googleapis.com/auth/fitness.activity.read',
-                    response_type: 'id_token permission'
-                }, function(response) {
-                    if (response.error) {
-                        // An error happened!
-                        return;
-                    }
-                    // The user authorized the application for the scopes requested.
-                    accessToken = response.access_token;
-                    var idToken = response.id_token;
-                    console.log(accessToken);
-                    // You can also now use gapi.client to perform authenticated requests.
-                });
-            }
-
-            $('#sign-in-or-out-button').on('click',function(){
-               handleClientLoad();
             });
+        }
+        function postData(){
+            var authCode = 'Bearer ';
+            authCode += accessToken;
+            // we use different device uid to distinguish different data sources of a same type.
+            var req_url = "https://www.googleapis.com/fitness/v1/users/me/dataset:aggregate";
+            // You may need dsId.
+            // var dsId = "derived:com.google.step_count.delta:com.google.android.gms:estimated_steps";
+            $.ajax({
+                type: "POST",
+                url: req_url,
+                dataType: "json",
+                contentType: "application/json; charset=utf-8",
+                data: JSON.stringify({
+                    "aggregateBy": [{
+                        "dataTypeName": "com.google.step_count.delta",
+                        "dataSourceId": "derived:com.google.step_count.delta:com.google.android.gms:estimated_steps"
+                    }],
+                    "bucketByTime": { "durationMillis": 86400000 },
+                    "startTimeMillis": 1551830401000,
+                    "endTimeMillis": 1552089540000
+                }),
 
-            function getData(){
-                var authCode = 'Bearer ';
-                authCode += accessToken;
+                beforeSend : function( xhr ) {
+                    xhr.setRequestHeader('Authorization', authCode);
+                },
+                success: function (response) {
+                    console.log(response);
+                },
+                failure: function(errMsg) {
+                    //get new access token
+                    alert(errMsg);
+                }
 
-                console.log(accessToken);
-
-                // var req_url = "https://www.googleapis.com/fitness/v1/users/me/dataSources";
-                //get today's date
-
-                var req_url = "https://www.googleapis.com/fitness/v1/users/me/sessions?startTime=2019-03-06T00:00:00.000Z&endTime=2019-03-13T23:59:59.999Z"
-                $.ajax({
-                    type: "GET",
-                    url: req_url,
-                    beforeSend : function( xhr ) {
-                        xhr.setRequestHeader('Authorization', authCode);
-                    },
-                    success: function (response) {
-
-                        var dss = response['session'];
-                        var dsname = [];
-                        for (i = 0; i < dss.length; i++) {
-                            dsname.push(dss[i]);
-                        }
-                        var d = new Date(response.session[0].startTimeMillis);
-                        console.log(response);
-                    }
-                });
-            }
-            $('#get').on('click',function(){
-               handleClientLoad();
             });
-            $('#next').on('click',function(){
-               getData();
-            });
-
+        }
+        $('#get').on('click',function(){
+            console.log('as;ldfkj');
+            getData();
         });
-    </script>
+        $('#post').on('click',function(){
+            console.log('as;ldfkj');
+            postData();
+        });
+        $('#next').on('click',function(){
+            handleClientLoad();
+        });
+    });
+</script>
 
-<button id="next">next</button>
-<button id="sign-in-or-out-button"
-        style="margin-left: 25px">Sign In/Authorize</button>
-<button id="revoke-access-button"
-        style="display: none; margin-left: 25px">Revoke access</button>
 
-<div id="auth-status" style="display: inline; padding-left: 25px"></div><hr>
+
 
 <body>
+<button id="next">Get Token</button>
+<button id="post">Post</button>
 <button id="get">Get</button>
 <div id="results"></div>
 </body>
