@@ -3,6 +3,7 @@ var app = new Vue({
     el: '#app',
 
     data: {
+        weeklySession: new Session(),
     },
 
     methods:{
@@ -28,30 +29,52 @@ var app = new Vue({
         },
         getData(){
             var authCode = 'Bearer ' + localStorage.getItem('token');
+            // this.weeklySession = new Session(["jello","pudding","pops"]);
             // console.log(authCode);
             // console.log(accessToken);
             // var req_url = "https://www.googleapis.com/fitness/v1/users/me/dataSources";
             //get today's date
-            var req_url = "https://www.googleapis.com/fitness/v1/users/me/sessions?startTime=2019-03-06T00:00:00.000Z&endTime=2019-03-13T23:59:59.999Z"
-            $.ajax({
-                type: "GET",
-                url: req_url,
-                beforeSend : function( xhr ) {
-                    xhr.setRequestHeader('Authorization', authCode);
-                },
-                success: function (response) {
-                    var dss = response['session'];
-                    var dsname = [];
-                    for (i = 0; i < dss.length; i++) {
-                        dsname.push(dss[i]);
-                    }
-                    var d = new Date(response.session[0].startTimeMillis);
-                    console.log(response);
-                },
-                failure: function(){
-                    //get new access token
-                }
-            });
+
+            //get the first day of the current week
+            var sunday = new Date(this.getSunday());
+            //get the last day of the current week
+            var saturday = new Date(this.getSaturday());
+
+
+            var req_url = "https://www.googleapis.com/fitness/v1/users/me/sessions?"+
+                "startTime="+sunday.getFullYear()+'-'+(sunday.getMonth() + 1)+'-'+sunday.getDate()+"T00:00:00.000Z"+
+                "&endTime="+saturday.getFullYear()+'-'+(saturday.getMonth() + 1)+'-'+saturday.getDate()+"T23:59:59.999Z";
+
+
+            axios.get(req_url, { headers: { Authorization: authCode } }).then(response => {
+                this.weeklySession = new Session(response.data.session);
+                console.log(response.data.session);
+            })
+                .catch((error) => {
+                    console.log('error 3 ' + error);
+                });
+            // $.ajax({
+            //     type: "GET",
+            //     url: req_url,
+            //     beforeSend: function( xhr ) {
+            //         xhr.setRequestHeader('Authorization', authCode);
+            //     },
+            //     success: function (response) {
+            //         var dss = response['session'];
+            //         var dsname = [];
+            //         for (i = 0; i < dss.length; i++) {
+            //             dsname.push(dss[i]);
+            //         }
+            //         // var d = new Date(response.session[0].startTimeMillis);
+            //         // console.log(dsname);
+            //         return dsname;
+            //
+            //     },
+            //     failure: function(){
+            //         //get new access token
+            //     }
+            // });
+            // console.log(this.weeklySession);
         },
         postData(){
             var authCode = 'Bearer ' + localStorage.getItem('token');
@@ -86,11 +109,42 @@ var app = new Vue({
                 }
 
             });
+        },
+        //Returns the Sunday at the beginning of current in milliseconds
+        getSunday(){
+            var date = new Date();
+            var today = date.getDay();
+            var sunday;
+            //if today is sunday
+            if(date.getDay() == 0){
+                sunday = new Date().setDate(date.getDate());
+            }
+            else{
+                sunday = new Date().setDate(date.getDate() - today);
+            }
+
+            return sunday;
+        },
+        //Returns the Saturday at the end of the current week in milliseconds
+        getSaturday(){
+            var date = new Date();
+            var today = date.getDay();
+            var saturday;
+            //if the day is Saturday
+            if (date.getDay == 6){
+                saturday = new Date().setDate(date.getDate());
+            }
+            else{
+                saturday = new Date().setDate((date.getDate() - today) + 6)
+            }
+            return saturday;
         }
 
     },
 
     computed:{
+        //return all activies in nested arrays with in the millisecond range of current monday
+        //monday:
 
     },
     watch:{
