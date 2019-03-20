@@ -4,6 +4,7 @@ var app = new Vue({
 
     data: {
         weeklySession: new Session(),
+        message:'Hello'
     },
 
     methods:{
@@ -40,41 +41,18 @@ var app = new Vue({
             //get the last day of the current week
             var saturday = new Date(this.getSaturday());
 
-
             var req_url = "https://www.googleapis.com/fitness/v1/users/me/sessions?"+
                 "startTime="+sunday.getFullYear()+'-'+(sunday.getMonth() + 1)+'-'+sunday.getDate()+"T00:00:00.000Z"+
                 "&endTime="+saturday.getFullYear()+'-'+(saturday.getMonth() + 1)+'-'+saturday.getDate()+"T23:59:59.999Z";
 
-
             axios.get(req_url, { headers: { Authorization: authCode } }).then(response => {
                 this.weeklySession = new Session(response.data.session);
                 console.log(response.data.session);
-            })
+                })
                 .catch((error) => {
-                    console.log('error 3 ' + error);
+                    console.log('token error ' + error);
+                    //refresh token
                 });
-            // $.ajax({
-            //     type: "GET",
-            //     url: req_url,
-            //     beforeSend: function( xhr ) {
-            //         xhr.setRequestHeader('Authorization', authCode);
-            //     },
-            //     success: function (response) {
-            //         var dss = response['session'];
-            //         var dsname = [];
-            //         for (i = 0; i < dss.length; i++) {
-            //             dsname.push(dss[i]);
-            //         }
-            //         // var d = new Date(response.session[0].startTimeMillis);
-            //         // console.log(dsname);
-            //         return dsname;
-            //
-            //     },
-            //     failure: function(){
-            //         //get new access token
-            //     }
-            // });
-            // console.log(this.weeklySession);
         },
         postData(){
             var authCode = 'Bearer ' + localStorage.getItem('token');
@@ -141,10 +119,18 @@ var app = new Vue({
         }
 
     },
-
-    computed:{
+    computed: {
         //return all activies in nested arrays with in the millisecond range of current monday
         //monday:
+        sundayList: function(){
+            return this.weeklySession.filter(function(item){
+               return item.endTimeMillis < 1552885141000;
+            });
+        }
+            // 1552798801000 am
+            // 1552885141000
+    },
+    mounted: function(){
 
     },
     watch:{
