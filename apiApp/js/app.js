@@ -30,16 +30,16 @@ var app = new Vue({
         },
         getData(){
             var authCode = 'Bearer ' + localStorage.getItem('token');
-            // this.weeklySession = new Session(["jello","pudding","pops"]);
             // console.log(authCode);
             // console.log(accessToken);
             // var req_url = "https://www.googleapis.com/fitness/v1/users/me/dataSources";
             //get today's date
 
             //get the first day of the current week
-            var sunday = new Date(this.getSunday());
+            var sunday = new Date(this.getDayOfWeek(0));
             //get the last day of the current week
-            var saturday = new Date(this.getSaturday());
+            var saturday = new Date(this.getDayOfWeek(7));
+            // console.log("Sunday: " + sunday + " " + "Saturday: " + saturday);
 
             var req_url = "https://www.googleapis.com/fitness/v1/users/me/sessions?"+
                 "startTime="+sunday.getFullYear()+'-'+(sunday.getMonth() + 1)+'-'+sunday.getDate()+"T00:00:00.000Z"+
@@ -89,46 +89,97 @@ var app = new Vue({
             });
         },
         //Returns the Sunday at the beginning of current in milliseconds
-        getSunday(){
+        // getSunday(){
+        //     var date = new Date();
+        //     var today = date.getDay();
+        //     var sunday;
+        //     //if today is sunday
+        //     if(date.getDay() == 0){
+        //         sunday = new Date().setDate(date.getDate());
+        //     }
+        //     else{
+        //         sunday = new Date().setDate(date.getDate() - today);
+        //     }
+        //
+        //     return sunday;
+        // },
+        // //Returns the Saturday at the end of the current week in milliseconds
+        // getSaturday(){
+        //     var date = new Date();
+        //     var today = date.getDay();
+        //     var saturday;
+        //     //if the day is Saturday
+        //     if (date.getDay == 6){
+        //         saturday = new Date().setDate(date.getDate());
+        //     }
+        //     else{
+        //         saturday = new Date().setDate((date.getDate() - today) + 6)
+        //     }
+        //     return saturday;
+        // },
+        //Returns day of the week
+        //day is an int 0-6 representing the day; Sunday = 0, Saturday = 6
+        getDayOfWeek(day){
             var date = new Date();
             var today = date.getDay();
-            var sunday;
-            //if today is sunday
-            if(date.getDay() == 0){
-                sunday = new Date().setDate(date.getDate());
-            }
-            else{
-                sunday = new Date().setDate(date.getDate() - today);
-            }
-
-            return sunday;
-        },
-        //Returns the Saturday at the end of the current week in milliseconds
-        getSaturday(){
-            var date = new Date();
-            var today = date.getDay();
-            var saturday;
+            var dayOfWeek;
             //if the day is Saturday
-            if (date.getDay == 6){
-                saturday = new Date().setDate(date.getDate());
+            if (date.getDay == day){
+                dayOfWeek = new Date().setDate(date.getDate());
             }
             else{
-                saturday = new Date().setDate((date.getDate() - today) + 6)
+                dayOfWeek = new Date().setDate((date.getDate() - today) + day)
             }
-            return saturday;
+            return dayOfWeek;
+        },
+        getDayList(day){
+            //get day of the week
+            let theDay = new Date(this.getDayOfWeek(day));
+            // get start of day in milliseconds
+            let startOfDay = theDay.setHours(0,0,0,0)
+            // get end of the day in milliseconds
+            let endOfDay = theDay.setHours(23,59,59,999);
+            console.log("End of day: " + day + " " + endOfDay);
+            console.log("Start of day: "+ day + " " + startOfDay);
+            return this.weeklySession.filter(function(item){
+                return item.endTimeMillis < endOfDay && item.startTimeMillis > startOfDay;
+            });
+
         }
 
     },
     computed: {
         //return all activies in nested arrays with in the millisecond range of current monday
         //monday:
-        sundayList: function(){
-            return this.weeklySession.filter(function(item){
-               return item.endTimeMillis < 1552885141000;
-            });
+        // sundayList: function(){
+        //     let endOfDay = new Date(this.getDayOfWeek(0));
+        //     endOfDay.setHours(23,59,59,999);
+        //     console.log(endOfDay);
+        //     return this.weeklySession.filter(function(item){
+        //        return item.endTimeMillis < endOfDay;
+        //     });
+        // }
+        sundayList: function() {
+            return this.getDayList(0);
+        },
+        mondayList: function(){
+            return this.getDayList(1);
+        },
+        tuesdayList: function(){
+            return this.getDayList(2);
+        },
+        wednesdayList: function(){
+            return this.getDayList(3);
+        },
+        thursdayList: function(){
+            return this.getDayList(4);
+        },
+        fridayList: function(){
+            return this.getDayList(5);
+        },
+        saturdayList: function(){
+            return this.getDayList(6)
         }
-            // 1552798801000 am
-            // 1552885141000
     },
     mounted: function(){
 
